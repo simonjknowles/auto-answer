@@ -3,11 +3,12 @@ name: Build APK
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -32,11 +33,17 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Rename APK with short SHA
+      - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/debug/app-debug.apk \
-             artifact/auto-answer-${GITHUB_SHA::7}.apk
+          REF_NAME_SAFE="${GITHUB_REF_NAME//\//-}"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            NAME="auto-answer-${GITHUB_REF_NAME}.apk"
+          else
+            NAME="auto-answer-${REF_NAME_SAFE}-${GITHUB_SHA::7}.apk"
+          fi
+          cp app/build/outputs/apk/debug/app-debug.apk "artifact/${NAME}"
+          echo "APK_PATH=artifact/${NAME}" >> $GITHUB_ENV
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -45,3 +52,26 @@ jobs:
           path: artifact/*.apk
           retention-days: 90
           if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auto-answer-apk
+          path: ./artifact
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            ./artifact/*.apk
