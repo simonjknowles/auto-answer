@@ -102,20 +102,16 @@ class CallNotificationListener : NotificationListenerService() {
         AnswerState.arm(minFireAtMs = fireAtMs)
         CrashLog.append(this, "armed accessibility tap, fireAt=+${totalDelay}ms")
 
-        if (answerAction != null) {
-            handler.postDelayed({
-                if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
+        handler.postDelayed({
+            if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
+            if (answerAction != null) {
                 val ok = fireAnswerAction(answerAction)
-                CrashLog.append(this, "fireAnswerAction returned $ok (accessibility will also tap as backup)")
-                SilenceWatchdog.startForActiveCall(this, isCellular = false)
-            }, totalDelay)
-        } else {
-            CrashLog.append(this, "no notification action; relying on accessibility tap only")
-            handler.postDelayed({
-                if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
-                SilenceWatchdog.startForActiveCall(this, isCellular = false)
-            }, totalDelay)
-        }
+                CrashLog.append(this, "fireAnswerAction returned $ok")
+            }
+            val invoked = CallAccessibilityService.directInvoke()
+            CrashLog.append(this, "accessibility directInvoke=$invoked")
+            SilenceWatchdog.startForActiveCall(this, isCellular = false)
+        }, totalDelay)
     }
 
     private fun isIncomingCall(n: Notification): Boolean {

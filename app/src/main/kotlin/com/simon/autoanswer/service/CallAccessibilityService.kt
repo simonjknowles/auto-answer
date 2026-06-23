@@ -17,6 +17,26 @@ class CallAccessibilityService : AccessibilityService() {
 
     private val handler = Handler(Looper.getMainLooper())
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        instance = this
+        CrashLog.append(this, "accessibility service connected")
+        Log.i(TAG, "Service connected")
+    }
+
+    override fun onUnbind(intent: android.content.Intent?): Boolean {
+        instance = null
+        CrashLog.append(this, "accessibility service unbound")
+        Log.i(TAG, "Service unbound")
+        return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        instance = null
+        CrashLog.append(this, "accessibility service destroyed")
+        super.onDestroy()
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val pkg = event.packageName?.toString() ?: return
@@ -37,6 +57,11 @@ class CallAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {}
+
+    fun tryAnswerImmediately() {
+        CrashLog.append(this, "accessibility direct-invoke tryAnswer")
+        tryAnswer()
+    }
 
     private fun tryAnswer() {
         val root = rootInActiveWindow ?: run {
@@ -134,6 +159,14 @@ class CallAccessibilityService : AccessibilityService() {
         private const val TAG = "CallA11yService"
         private const val PKG_WHATSAPP = "com.whatsapp"
         private const val PKG_WHATSAPP_BUSINESS = "com.whatsapp.w4b"
+
+        @Volatile private var instance: CallAccessibilityService? = null
+
+        fun directInvoke(): Boolean {
+            val i = instance ?: return false
+            i.handler.post { i.tryAnswerImmediately() }
+            return true
+        }
 
         private val ID_HINTS = listOf(
             "accept_call_btn",
