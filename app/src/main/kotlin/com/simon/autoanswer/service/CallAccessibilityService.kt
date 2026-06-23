@@ -28,8 +28,12 @@ class CallAccessibilityService : AccessibilityService() {
 
         if (!AnswerState.consumeIfFresh()) return
 
-        Log.i(TAG, "Call screen visible + armed; scheduling tap in ${prefs.delayMs.value} ms")
-        handler.postDelayed({ tryAnswer() }, prefs.delayMs.value.toLong())
+        val now = System.currentTimeMillis()
+        val minFire = AnswerState.minFireAtMs()
+        val delay = (minFire - now).coerceAtLeast(prefs.delayMs.value.toLong())
+        Log.i(TAG, "Call screen visible + armed; scheduling tap in ${delay} ms")
+        CrashLog.append(this, "accessibility scheduled tap in ${delay}ms (minFire=$minFire)")
+        handler.postDelayed({ tryAnswer() }, delay)
     }
 
     override fun onInterrupt() {}
@@ -52,9 +56,8 @@ class CallAccessibilityService : AccessibilityService() {
             if (!ok) swipeUpFallback(target)
             return
         }
-        Log.w(TAG, "No Answer node found, trying swipe-up fallback")
-        CrashLog.append(this, "accessibility: no Answer node found in tree; trying swipe-up")
-        swipeUpFallback(null)
+        Log.i(TAG, "No Answer node found — likely already answered by PendingIntent path")
+        CrashLog.append(this, "accessibility: no Answer node visible (call probably answered already)")
     }
 
     private fun logClickableNodes(root: AccessibilityNodeInfo) {

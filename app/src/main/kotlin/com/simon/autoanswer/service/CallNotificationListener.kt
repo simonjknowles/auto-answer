@@ -97,27 +97,25 @@ class CallNotificationListener : NotificationListenerService() {
             1500L
         } else 0L
 
-        if (answerAction == null) {
-            AnswerState.arm()
-            CrashLog.append(this, "armed accessibility fallback (no notification action)")
+        val totalDelay = baseDelay + announceDelay
+        val fireAtMs = System.currentTimeMillis() + totalDelay
+        AnswerState.arm(minFireAtMs = fireAtMs)
+        CrashLog.append(this, "armed accessibility tap, fireAt=+${totalDelay}ms")
+
+        if (answerAction != null) {
+            handler.postDelayed({
+                if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
+                val ok = fireAnswerAction(answerAction)
+                CrashLog.append(this, "fireAnswerAction returned $ok (accessibility will also tap as backup)")
+                SilenceWatchdog.startForActiveCall(this, isCellular = false)
+            }, totalDelay)
+        } else {
+            CrashLog.append(this, "no notification action; relying on accessibility tap only")
             handler.postDelayed({
                 if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
                 SilenceWatchdog.startForActiveCall(this, isCellular = false)
-            }, baseDelay + announceDelay)
-            return
+            }, totalDelay)
         }
-
-        handler.postDelayed({
-            if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
-            val ok = fireAnswerAction(answerAction)
-            CrashLog.append(this, "fireAnswerAction returned $ok")
-            if (!ok) {
-                AnswerState.arm()
-                CrashLog.append(this, "PendingIntent failed, armed accessibility fallback")
-                return@postDelayed
-            }
-            SilenceWatchdog.startForActiveCall(this, isCellular = false)
-        }, baseDelay + announceDelay)
     }
 
     private fun isIncomingCall(n: Notification): Boolean {
