@@ -23,7 +23,7 @@ A custom Android app that:
 
 | Item | Spec / model | Notes |
 |---|---|---|
-| Tablet | Android 8+ with Google Play Services. Stock-Android variants preferred. | Coopers CP10/CP10S works (Android 14, Spreadtrum SC7731E, 2 GB RAM). Mid-range Samsung Galaxy Tab A9 is the recommended upgrade if reliability is critical. |
+| Tablet | Android 8+ with Google Play Services. Stock-Android variants preferred. | Coopers of Stortford "Easy to Use" tablet (Android 14) works — actual hardware is a rebadged Hyundai P634. Mid-range Samsung Galaxy Tab A9 is the recommended upgrade if reliability is critical. |
 | Tablet charger + dock | Permanent power | These budget tablets can't survive a day in standby. Plug in always. |
 | Bluetooth speaker | Amazon Echo (any) | Plays caller's voice. **Cannot** carry resident's voice back (no HFP) — that goes via tablet's built-in mic. |
 | Wi-Fi | 2.4 / 5 GHz | Required for WhatsApp and heartbeat pings. |

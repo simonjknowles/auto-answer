@@ -14,7 +14,7 @@ The end-user workflow is documented in `SETUP.md`. Read that before suggesting a
 
 ## 2. Target hardware (important for design decisions)
 
-- **Tablet**: Coopers CP10/CP10S, Android 14, Spreadtrum SC7731E quad-core ARM 1.5 GHz, 2 GB RAM, 1280×800 display, USB-C charge-only (no DisplayPort Alt Mode), has Google Play Store and Google Mobile Services
+- **Tablet**: Coopers of Stortford "Easy to Use" — actual `Build.MODEL` is `Hyundai P634` (Coopers rebrand a Hyundai-branded budget tablet). Android 14, 1280×800 display, USB-C charge-only (no DisplayPort Alt Mode), has Google Play Store and Google Mobile Services. Older Coopers SKUs used the Spreadtrum SC7731E chipset; same architectural constraints apply.
 - **Bluetooth speaker**: Amazon Echo (any). **Critical**: Echo supports A2DP only, NOT HFP. Caller's voice plays from Echo, resident's voice goes via tablet's built-in mic. This is a hardware limit — no app code can fix it.
 - **TV mirroring (optional)**: Google TV Streamer 4K (ASIN B0DBLWTQCT) via Google Cast screen mirroring. **Do not recommend Miracast adapters** — Spreadtrum's Miracast support is unreliable.
 
