@@ -105,8 +105,8 @@ object DiagnosticChecks {
 
     private fun isBluetoothA2dpConnected(context: Context): Boolean {
         val am = context.getSystemService(AudioManager::class.java) ?: return false
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return am.isBluetoothA2dpOn
-        return am.availableCommunicationDevices.any { dev ->
+        val outputs = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        return outputs.any { dev ->
             dev.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
                 dev.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET ||
                 dev.type == android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER
