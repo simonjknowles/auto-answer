@@ -107,18 +107,23 @@ object PermissionStatus {
     }
 
     fun openNotificationListenerSettings(context: Context) {
-        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
-                putExtra(
-                    Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-                    ComponentName(context, CallNotificationListener::class.java).flattenToString(),
-                )
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        @Suppress("DEPRECATION")
+        val attempts = listOfNotNull(
+            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS),
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
+                    putExtra(
+                        Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                        ComponentName(context, CallNotificationListener::class.java).flattenToString(),
+                    )
+                }
+            } else null,
+            Intent(Settings.ACTION_SETTINGS),
+        )
+        for (intent in attempts) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (runCatching { context.startActivity(intent) }.isSuccess) return
         }
-        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     @Suppress("BatteryLife")
