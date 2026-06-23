@@ -49,13 +49,31 @@ object PermissionStatus {
         return value != 0
     }
 
+    fun isDeveloperOptionsUnlocked(context: Context): Boolean {
+        val value = Settings.Global.getInt(
+            context.contentResolver,
+            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+            0,
+        )
+        return value != 0
+    }
+
     fun openDeveloperOptions(context: Context) {
-        val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { context.startActivity(intent) }.onFailure {
-            context.startActivity(
-                Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+        val attempts = listOf(
+            Intent("android.settings.DEVELOPMENT_SETTINGS"),
+            Intent().setClassName(
+                "com.android.settings",
+                "com.android.settings.Settings\$DevelopmentSettingsDashboardActivity",
+            ),
+            Intent().setClassName(
+                "com.android.settings",
+                "com.android.settings.DevelopmentSettings",
+            ),
+            Intent(Settings.ACTION_SETTINGS),
+        )
+        for (intent in attempts) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (runCatching { context.startActivity(intent) }.isSuccess) return
         }
     }
 

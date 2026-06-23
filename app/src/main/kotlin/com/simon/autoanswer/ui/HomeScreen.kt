@@ -95,6 +95,7 @@ fun HomeScreen() {
     val battery = remember(permTick) { PermissionStatus.isIgnoringBatteryOptimizations(context) }
     val overlay = remember(permTick) { PermissionStatus.canDrawOverlays(context) }
     val stayAwake = remember(permTick) { PermissionStatus.isStayAwakeEnabled(context) }
+    val devOptsUnlocked = remember(permTick) { PermissionStatus.isDeveloperOptionsUnlocked(context) }
     val answerCalls = remember(permTick) { PermissionStatus.hasAnswerCallsPermission(context) }
     val recordAudio = remember(permTick) { PermissionStatus.hasRecordAudioPermission(context) }
     val contactsPerm = remember(permTick) { PermissionStatus.hasContactsPermission(context) }
@@ -172,7 +173,11 @@ fun HomeScreen() {
             )
             PermissionRow(
                 title = "Stay awake while charging",
-                rationale = "Keeps the display alive so TV mirroring doesn't drop. Developer Options.",
+                rationale = if (devOptsUnlocked) {
+                    "Lives in Developer Options. Fix will open it — toggle 'Stay awake'."
+                } else {
+                    "Developer Options must be unlocked first: Settings → About tablet → tap Build number 7 times. Then Fix will open Developer Options where you toggle 'Stay awake'."
+                },
                 granted = stayAwake,
                 onFix = { PermissionStatus.openDeveloperOptions(context) },
             )
