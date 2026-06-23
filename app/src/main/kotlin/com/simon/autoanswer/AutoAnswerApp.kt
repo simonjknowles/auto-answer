@@ -7,6 +7,7 @@ import android.os.Build
 import com.simon.autoanswer.diag.CrashLog
 import com.simon.autoanswer.service.WatchdogService
 import com.simon.autoanswer.work.HeartbeatScheduler
+import com.simon.autoanswer.work.LogEmailScheduler
 
 class AutoAnswerApp : Application() {
 
@@ -16,6 +17,7 @@ class AutoAnswerApp : Application() {
         ensureChannels()
         WatchdogService.start(this)
         HeartbeatScheduler.schedule(this)
+        LogEmailScheduler.schedule(this)
     }
 
     private fun ensureChannels() {

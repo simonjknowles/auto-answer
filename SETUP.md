@@ -177,6 +177,28 @@ For email/SMS alerts if the system stops working.
 
 What the app POSTs to that URL: a plain-text snapshot of every diagnostic field. The healthchecks.io dashboard shows it in the "last ping" details. The ping URL is hit if all required permissions are green; the `/fail` variant is hit if any required permission is missing.
 
+### 6.6b Daily log email (Google Apps Script relay)
+
+Sends a daily email containing the current diagnostic snapshot + recent log entries, useful for monitoring whether the tablet stays healthy without remoting into the dashboard.
+
+Architecture: app → POST → your Google Apps Script (webhook) → MailApp.sendEmail → your Gmail. No third-party API keys, no extra accounts. The script runs as you and emails you.
+
+**One-time setup (~5 min):**
+
+1. Sign in to **https://script.google.com** with the Gmail account you want to receive the emails on
+2. Click **+ New project**
+3. Delete any boilerplate code in the editor
+4. Open `tools/log-email.gs` in this repo and paste the entire content into the editor
+5. Edit the `RECIPIENT` constant at the top to your Gmail address
+6. Click **Deploy → New deployment**
+7. Type = **Web app**, Execute as = **Me (you@gmail.com)**, Who has access = **Anyone**
+8. Click **Deploy**. First time, Google asks permission to send mail on your behalf — approve.
+9. Copy the **Web app URL** shown (looks like `https://script.google.com/macros/s/AKfycb…/exec`)
+10. In the app: paste into the **Apps Script web app URL** field, toggle **Daily log email** on, tap **Send test email now**
+11. Within ~30 sec, check your Gmail — there should be an email titled `Auto Answer log · <device> · <timestamp>` with the diagnostic + log content
+
+Cadence after setup: every ~24 hours (with up to 2 h jitter, scheduled via WorkManager). Tap **Send test email now** any time for an immediate send.
+
 ### 6.7 WhatsApp remote commands
 
 For remotely toggling state without physical access.

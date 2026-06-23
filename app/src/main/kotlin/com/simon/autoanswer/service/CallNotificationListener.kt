@@ -65,12 +65,19 @@ class CallNotificationListener : NotificationListenerService() {
         recentlyHandled.entries.removeAll { now - it.value > 60_000 }
 
         val callerName = n.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
-        CrashLog.append(this, "whatsapp ringing from '$callerName'")
+        val actionTitles = n.actions?.map { it.title?.toString().orEmpty() }.orEmpty()
+        val hasFullScreen = n.fullScreenIntent != null
+        CrashLog.append(this,
+            "whatsapp ringing from='$callerName' " +
+                "category=${n.category} " +
+                "actions=${actionTitles.size}[${actionTitles.joinToString("|")}] " +
+                "fullScreenIntent=$hasFullScreen")
         Log.i(TAG, "Incoming WhatsApp call detected (key=$key from=$callerName)")
 
         if (prefs.loudChime.value) Chime.play(this)
 
         val answerAction = findAnswerAction(n)
+        CrashLog.append(this, "answerAction = ${if (answerAction == null) "NOT FOUND" else "found: ${answerAction.title}"}")
 
         if (prefs.testMode.value) {
             handler.post {
@@ -92,6 +99,7 @@ class CallNotificationListener : NotificationListenerService() {
 
         if (answerAction == null) {
             AnswerState.arm()
+            CrashLog.append(this, "armed accessibility fallback (no notification action)")
             handler.postDelayed({
                 if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
                 SilenceWatchdog.startForActiveCall(this, isCellular = false)
@@ -102,8 +110,10 @@ class CallNotificationListener : NotificationListenerService() {
         handler.postDelayed({
             if (prefs.forceBluetoothAudio.value) AudioRouter.routeToBluetoothIfAvailable(this)
             val ok = fireAnswerAction(answerAction)
+            CrashLog.append(this, "fireAnswerAction returned $ok")
             if (!ok) {
                 AnswerState.arm()
+                CrashLog.append(this, "PendingIntent failed, armed accessibility fallback")
                 return@postDelayed
             }
             SilenceWatchdog.startForActiveCall(this, isCellular = false)

@@ -55,6 +55,7 @@ import com.simon.autoanswer.debug.NetworkAddress
 import com.simon.autoanswer.diag.CrashLog
 import com.simon.autoanswer.diag.DiagnosticChecks
 import com.simon.autoanswer.work.HeartbeatScheduler
+import com.simon.autoanswer.work.LogEmailScheduler
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,6 +81,8 @@ fun HomeScreen() {
     val adminContacts by prefs.adminContacts.collectAsState()
     val debugServerEnabled by prefs.debugServerEnabled.collectAsState()
     val debugServerPort by prefs.debugServerPort.collectAsState()
+    val logEmailUrl by prefs.logEmailUrl.collectAsState()
+    val logEmailEnabled by prefs.logEmailEnabled.collectAsState()
 
     var permTick by remember { mutableStateOf(0) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -307,6 +310,15 @@ fun HomeScreen() {
                 )
             }
 
+            SectionLabel("Daily log email")
+            LogEmailCard(
+                url = logEmailUrl,
+                enabled = logEmailEnabled,
+                onUrlChange = prefs::setLogEmailUrl,
+                onEnabledChange = prefs::setLogEmailEnabled,
+                onSendNow = { LogEmailScheduler.sendNow(context) },
+            )
+
             SectionLabel("Debug dashboard (browser)")
             DebugServerCard(
                 enabled = debugServerEnabled,
@@ -506,6 +518,51 @@ private fun NumberSetCard(
                 val parsed = text.split(",", "\n", ";").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
                 onChange(parsed)
             }) { Text("Save") }
+        }
+    }
+}
+
+@Composable
+private fun LogEmailCard(
+    url: String,
+    enabled: Boolean,
+    onUrlChange: (String) -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
+    onSendNow: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Daily log email", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Posts the recent log + diagnostic snapshot to a Google Apps Script you own, which emails it to your Gmail. Once per day (with up to 2h jitter). Free; no third-party API keys.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                androidx.compose.material3.Switch(
+                    checked = enabled,
+                    onCheckedChange = onEnabledChange,
+                )
+            }
+            OutlinedTextField(
+                value = url,
+                onValueChange = onUrlChange,
+                placeholder = { Text("https://script.google.com/macros/s/.../exec") },
+                label = { Text("Apps Script web app URL") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                "Setup: visit script.google.com → New project → paste the script from SETUP.md → Deploy as Web App → Execute as: Me, Access: Anyone → copy the /exec URL → paste here.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Button(onClick = onSendNow, enabled = enabled && url.isNotBlank()) {
+                Text("Send test email now")
+            }
         }
     }
 }

@@ -64,6 +64,12 @@ class Prefs private constructor(private val sp: SharedPreferences) {
     private val _debugServerPort = MutableStateFlow(sp.getInt(KEY_DEBUG_PORT, 8765))
     val debugServerPort: StateFlow<Int> = _debugServerPort.asStateFlow()
 
+    private val _logEmailUrl = MutableStateFlow(sp.getString(KEY_LOG_EMAIL_URL, "") ?: "")
+    val logEmailUrl: StateFlow<String> = _logEmailUrl.asStateFlow()
+
+    private val _logEmailEnabled = MutableStateFlow(sp.getBoolean(KEY_LOG_EMAIL_ENABLED, false))
+    val logEmailEnabled: StateFlow<Boolean> = _logEmailEnabled.asStateFlow()
+
     fun setEnabled(value: Boolean) {
         sp.edit { putBoolean(KEY_ENABLED, value) }
         _enabled.value = value
@@ -152,6 +158,16 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         _debugServerPort.value = clamped
     }
 
+    fun setLogEmailUrl(value: String) {
+        sp.edit { putString(KEY_LOG_EMAIL_URL, value) }
+        _logEmailUrl.value = value
+    }
+
+    fun setLogEmailEnabled(value: Boolean) {
+        sp.edit { putBoolean(KEY_LOG_EMAIL_ENABLED, value) }
+        _logEmailEnabled.value = value
+    }
+
     companion object {
         const val DEFAULT_DELAY_MS = 1500
 
@@ -173,6 +189,8 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         private const val KEY_ADMIN_CONTACTS = "admin_contacts"
         private const val KEY_DEBUG_SERVER = "debug_server"
         private const val KEY_DEBUG_PORT = "debug_port"
+        private const val KEY_LOG_EMAIL_URL = "log_email_url"
+        private const val KEY_LOG_EMAIL_ENABLED = "log_email_enabled"
 
         @Volatile private var instance: Prefs? = null
 

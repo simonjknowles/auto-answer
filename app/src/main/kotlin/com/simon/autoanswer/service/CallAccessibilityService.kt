@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.simon.autoanswer.audio.AudioRouter
 import com.simon.autoanswer.data.Prefs
+import com.simon.autoanswer.diag.CrashLog
 
 class CallAccessibilityService : AccessibilityService() {
 
@@ -36,20 +37,45 @@ class CallAccessibilityService : AccessibilityService() {
     private fun tryAnswer() {
         val root = rootInActiveWindow ?: run {
             Log.w(TAG, "No active window")
+            CrashLog.append(this, "accessibility: rootInActiveWindow is null")
             return
         }
         if (Prefs.get(this).forceBluetoothAudio.value) {
             AudioRouter.routeToBluetoothIfAvailable(this)
         }
+        logClickableNodes(root)
         val target = findAnswerNode(root)
         if (target != null) {
             val ok = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             Log.i(TAG, "Tapped Answer node ok=$ok id=${target.viewIdResourceName}")
+            CrashLog.append(this, "accessibility tapped id=${target.viewIdResourceName} text='${target.text}' desc='${target.contentDescription}' clickOk=$ok")
             if (!ok) swipeUpFallback(target)
             return
         }
         Log.w(TAG, "No Answer node found, trying swipe-up fallback")
+        CrashLog.append(this, "accessibility: no Answer node found in tree; trying swipe-up")
         swipeUpFallback(null)
+    }
+
+    private fun logClickableNodes(root: AccessibilityNodeInfo) {
+        val sb = StringBuilder("accessibility tree clickables: ")
+        val queue: ArrayDeque<AccessibilityNodeInfo> = ArrayDeque()
+        queue.add(root)
+        var count = 0
+        while (queue.isNotEmpty() && count < 25) {
+            val n = queue.removeFirst()
+            if (n.isClickable) {
+                count++
+                val id = n.viewIdResourceName?.substringAfter(":id/") ?: "?"
+                val text = n.text?.toString()?.take(30).orEmpty()
+                val desc = n.contentDescription?.toString()?.take(30).orEmpty()
+                sb.append("[$id|$text|$desc] ")
+            }
+            for (i in 0 until n.childCount) {
+                n.getChild(i)?.let { queue.add(it) }
+            }
+        }
+        CrashLog.append(this, sb.toString().take(2000))
     }
 
     private fun findAnswerNode(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
