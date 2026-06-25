@@ -28,7 +28,8 @@ A custom Android app that:
 | Bluetooth speaker | Amazon Echo (any) | Plays caller's voice. **Cannot** carry resident's voice back (no HFP) — that goes via tablet's built-in mic. |
 | Wi-Fi | 2.4 / 5 GHz | Required for WhatsApp and heartbeat pings. |
 | SIM | Cellular service if you want to auto-answer SIM calls | Smarty SIM works. |
-| **Optional**: Google TV Streamer 4K | ASIN B0DBLWTQCT (~£99) | Mirrors tablet display to a TV via Google Cast. Cheaper alternative: Chromecast with Google TV HD (B0BG6MX1CG, ~£40). **Do NOT buy generic "Miracast" dongles** — Spreadtrum chipset's Miracast support is unreliable. |
+| **Optional**: Google TV Streamer 4K | ASIN B0DBLWTQCT (~£99) | Mirrors tablet display to a TV via Google Cast. Cheaper alternative: Chromecast with Google TV HD (B0BG6MX1CG, ~£40). **Do NOT buy generic "Miracast" dongles** — Spreadtrum/Hyundai chipset's Miracast support is unreliable. Setup requires HDMI-CEC enabled on the TV — see §8.3. |
+| **Optional**: HDMI cable | Standard Type A both ends, 1–2 m, ~£5 | Required if using a TV streamer. Not included in Google's streamer box. Any modern cable works — no need for "Premium" or "8K" labels for our purpose. |
 | **Optional**: Better speakerphone | Jabra Speak 510 (~£100) or Anker PowerConf S3 | If two-way audio quality matters; replaces Echo for calls. Echo can stay for music. |
 
 ### Placement guidance
@@ -259,17 +260,111 @@ Run this end-to-end on first install AND any time you change permissions.
 
 ## 8. TV mirroring (Google TV Streamer)
 
-Only relevant if you've bought a Google TV Streamer 4K (B0DBLWTQCT) or Chromecast with Google TV HD.
+Optional — adds a large-screen view of incoming WhatsApp video calls. Audio still routes to the Echo via Bluetooth; only the picture goes to the TV.
 
-1. **Plug in**: HDMI → TV; USB-C power → outlet
-2. **TV input** → switch to that HDMI source
-3. **On-screen wizard**: pair remote, connect Wi-Fi (same SSID as tablet), sign in to Google
-4. Name device something obvious like `Living Room TV`
-5. **On the tablet**: Quick Settings → **Cast Screen** → pick `Living Room TV`
-6. Choose **Mirror display only** (audio stays on Echo) OR **display + audio** (TV speakers take over). Picking display-only is the recommended pattern: caller's voice from Echo, video on TV.
-7. **Leave mirroring running**. Tablet's screen now appears on the TV always. When a call answers, the call UI appears on the TV too.
+### 8.1 What you need
 
-If mirroring drops after a Wi-Fi blip, re-tap **Cast Screen** → re-pick the TV. 5 sec, no reboot.
+- **Google TV Streamer 4K** (Amazon ASIN B0DBLWTQCT, ~£99) OR **Chromecast with Google TV HD** (B0BG6MX1CG, ~£40). Both genuine Google hardware with full Google Cast support. **Do NOT buy generic "Miracast" / "AnyCast" dongles** — Spreadtrum/Hyundai tablet chipsets have unreliable Miracast support; only Google Cast works properly.
+- **HDMI cable** (standard HDMI Type A both ends, 1–2 m, ~£5). Not included in the streamer box. Without the cable, the streamer can't display anything, so setup can't even begin.
+- **2.4/5 GHz Wi-Fi** the streamer and tablet share. Same SSID required for casting.
+- **A TV with HDMI input and HDMI-CEC support**. Every TV from the last 15 years has both, but CEC is sometimes disabled by default — see 8.3.
+
+### 8.2 Initial setup
+
+1. **Plug in**: HDMI → TV's HDMI port (note which one — HDMI 1, HDMI 2 etc.); USB-C power → outlet
+2. **TV input** → switch to that HDMI port using the TV remote's Source/Input button
+3. **On-screen wizard appears** on the TV:
+   - Pair the streamer remote (hold the two buttons it shows)
+   - Connect to Wi-Fi (same SSID as the tablet — important)
+   - Sign in to a Google account (use whichever you also use on the tablet — makes casting smoother)
+4. **Name the device** something obvious like `Living Room TV` so it's findable from the tablet's Cast dialog
+5. (Skip optional app installs — you don't need Netflix etc. for this use case unless you want them)
+
+### 8.3 Enable HDMI-CEC on the TV — this is the bit that makes it auto-switch
+
+HDMI-CEC (Consumer Electronics Control) lets HDMI devices communicate: when an incoming WhatsApp call appears on the streamer, CEC tells the TV to wake up and switch to the streamer's HDMI input automatically. Without CEC, someone would have to grab the remote and switch input manually every call.
+
+Every TV brand renames CEC, which is unhelpful. On your TV's settings menu, look for one of these labels:
+
+| Brand | What CEC is called |
+|---|---|
+| Samsung | **Anynet+ (HDMI-CEC)** |
+| LG | **SimpLink** |
+| Sony | **Bravia Sync** |
+| Panasonic | **VIERA Link** |
+| Philips / AOC | **EasyLink** |
+| Hisense | **HDMI-CEC** |
+| TCL | **HDMI-CEC** or **T-Link** |
+| Sharp | **Aquos Link** |
+| Toshiba | **RegzaLink** / **CE-Link** |
+| Other / unknown | search the TV menu for `CEC` or `HDMI Control` |
+
+Where to find it: usually **Settings → System → External Device Manager** or **Settings → General → CEC** or **Settings → Connections → HDMI**. If you can't locate it, search the TV's manual PDF for "CEC".
+
+Once you find the right toggle:
+
+1. **Turn CEC on**
+2. If there are sub-options like **Auto Power On** or **HDMI Auto-switch / Input Switching**, turn those on too
+3. (Optional) **One Touch Play** — also CEC-related; enables waking the TV from standby
+
+### 8.4 Enable casting from the tablet — leave it on permanently
+
+Because Android **forbids third-party apps from programmatically starting Cast Screen** (security policy — the Auto Answer app can't initiate cast, only the user can), the only viable model is "cast on permanently".
+
+1. On the tablet: pull down Quick Settings panel
+2. Tap **Cast Screen** (might be labelled **Smart View**, **Screen Cast**, or just **Cast** depending on launcher)
+3. Pick `Living Room TV` from the list
+4. Choose **Mirror display only** — audio continues to play through the Echo via Bluetooth; only the picture goes to the TV. (Picking "display + audio" would route audio through the TV speakers instead — worse for an elderly resident sitting far from the TV.)
+5. **Leave it running.** The tablet's screen now mirrors to the TV indefinitely.
+
+### 8.5 What the call flow looks like in practice
+
+```
+Resident watches BBC One on the TV (built-in tuner, Freeview, Sky etc.)
+   ↓
+WhatsApp call rings on the tablet (sitting on its dock)
+   ↓
+Auto Answer (v0.1.6+) auto-answers within ~3 seconds
+   ↓
+WhatsApp call UI appears on the tablet display
+   ↓
+Tablet's already-active mirror stream sends the new content to the Google TV Streamer
+   ↓
+Streamer detects "new active source" and sends a CEC signal to the TV
+   ↓
+TV (CEC enabled):
+   - Wakes from standby if it was off
+   - Auto-switches input from BBC One to the streamer's HDMI port
+   ↓
+Caller's video appears on the TV; voice plays through the Echo
+   ↓
+Resident sees and hears the call without lifting a finger
+```
+
+### 8.6 The one annoyance — manual return after call
+
+When the call ends, the TV **stays on the streamer's HDMI input**. CEC switches IN automatically but doesn't switch OUT. Someone needs to press the TV's Source / Input button on the remote and select BBC One (or whatever the previous source was).
+
+Practical mitigations:
+
+- **Sticker on the TV remote**: "After a call, press SOURCE → Live TV" with an arrow pointing at the Source button. Cheap and works.
+- **Use the streamer for everyday TV too**: install Freeview Play / iPlayer / All4 etc. on the Google TV Streamer and use it as the resident's main TV interface. Then "back to TV" is just pressing Home on the streamer remote — no input switching needed.
+- **Programmable IR-blaster smart-home setup**: ~£100, overkill for one tablet but possible. Out of scope here.
+
+### 8.7 If mirroring drops (rare)
+
+Wi-Fi blips, router reboots, or extended idle periods can cause the mirror to stop. Symptoms: tablet's screen shows the home screen but the TV is blank or shows a "no signal" message.
+
+Fix: on the tablet, Quick Settings → **Cast Screen** → re-pick the TV. 5-second reconnect.
+
+For monitoring, the daily log email will show whether the tablet is otherwise healthy. The mirror state itself isn't logged because Android doesn't expose it cleanly — but if you keep getting "everything's green" emails but the family member reports "video stopped showing on the TV", it's almost always a cast disconnection.
+
+### 8.8 What the app does NOT do (limits to internalise)
+
+- **Cannot auto-start the cast** — Android security policy. Cast must be started manually once and left on.
+- **Cannot stop the cast after a call ends** — same restriction. Mirror stays on.
+- **Cannot switch the TV's HDMI input** — that's CEC's job (handled by the streamer + TV).
+- **Cannot route call audio to TV speakers** — audio is pinned to the Bluetooth A2DP device (Echo). Picking "display + audio" mode during cast would change this but is not recommended for the elderly use case.
 
 ## 9. Troubleshooting
 
@@ -315,6 +410,17 @@ Use the debug dashboard first — it surfaces 80% of issues. For the remaining 2
 | Heartbeat URL test ping returns error | URL pasted with trailing spaces / wrong UUID | Trim whitespace, copy-paste again from healthchecks.io dashboard |
 | Heartbeat works initially, then stops | Tablet lost Wi-Fi | Debug dashboard → Audio panel will also show false flags; physically check router |
 | Healthchecks.io alerts that "tablet hasn't pinged" | Tablet rebooted and didn't auto-restart properly OR battery optimisation killed WorkManager | Reboot tablet, walk permission wizard again |
+
+### TV mirroring
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Call answers but TV stays on BBC One — no auto-switch | HDMI-CEC disabled on the TV | Enable CEC in TV settings (it's under whatever name the manufacturer uses — see §8.3) |
+| Call answers, TV switches to streamer, but screen is black | Cast wasn't active when call arrived; CEC switched in but the streamer has no live stream | Re-tap **Cast Screen** in tablet's Quick Settings; cast must be always-on. Possibly Wi-Fi flicker dropped it. |
+| TV switches in for the call but never switches back to BBC One after the call ends | Expected behaviour — CEC switches IN automatically, doesn't switch OUT | Press TV remote's Source/Input button → select original input. Long-term: use the streamer as the resident's main TV interface so they live on this input. |
+| Cast Screen dropdown doesn't show the Google TV / Chromecast | Streamer and tablet on different Wi-Fi SSIDs or AP-isolation enabled | Both must be on the same SSID. Check router settings for AP isolation / client isolation and disable. |
+| TV doesn't power on when call arrives despite CEC | TV's "Auto Power On" CEC sub-setting is off | Look in TV's CEC settings for sub-options like "Auto Power On" / "One Touch Play" — enable. |
+| Tried a non-Google "Chromecast" / "Miracast" dongle and nothing works | These knockoff dongles use Miracast which Spreadtrum/Hyundai chipsets don't reliably support | Return the dongle; buy a genuine Google TV Streamer (B0DBLWTQCT) or Chromecast with Google TV HD (B0BG6MX1CG). |
 
 ### WhatsApp updates broke detection
 
@@ -373,6 +479,9 @@ These are **fundamental** — no software change will fix them.
 | Spreadtrum chipset has flaky Miracast | Stick to Google Cast (Chromecast / Google TV Streamer). Avoid generic "Miracast" dongles. |
 | 2 GB RAM on the Coopers tablet | Don't install many other apps; one heavy app + the auto-answer stack + WhatsApp + Cast is the practical ceiling. |
 | Tablet's built-in mic has poor pickup beyond ~1 m | If resident moves around the room, replace Echo with a Jabra Speak 510 for proper omnidirectional pickup. |
+| Android forbids third-party apps from starting Cast Screen programmatically | The app **cannot** auto-start TV mirroring when a call arrives. Mirror must be started manually once and left running ("cast-always-on"). See §8.4. |
+| HDMI-CEC switches inputs IN but not OUT | When a call ends, the TV stays on the streamer's HDMI input. Manual return required (Source button → original input) — there's no software fix from our side. See §8.6. |
+| Hyundai P634 has no Developer Options exposed | "Stay awake while charging" setting (which lives there) is unavailable. Workaround: Settings → Display → Screen timeout → longest available, then leave plugged in. Diagnostic shows MISSING but tablet behaves correctly. |
 
 ## 12. Quick reference
 
