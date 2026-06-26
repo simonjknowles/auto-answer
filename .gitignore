@@ -12,3 +12,8 @@
 *.aab
 *.keystore
 *.jks
+
+# Allow the stable debug keystore committed to the repo so every build
+# (local + CI) signs APKs with the same key — required for in-place
+# upgrades to work. Debug keystores carry no security value.
+!keystore/debug.keystore

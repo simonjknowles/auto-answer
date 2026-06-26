@@ -64,34 +64,58 @@ class CallAccessibilityService : AccessibilityService() {
     }
 
     private fun tryAnswer() {
-        val root = rootInActiveWindow ?: run {
-            Log.w(TAG, "No active window")
-            CrashLog.append(this, "accessibility: rootInActiveWindow is null")
-            return
-        }
-        val rootPkg = root.packageName?.toString()
-        if (rootPkg != PKG_WHATSAPP && rootPkg != PKG_WHATSAPP_BUSINESS) {
-            CrashLog.append(this, "accessibility: rootInActiveWindow is '$rootPkg', not WhatsApp — refusing to tap")
-            return
-        }
         if (Prefs.get(this).forceBluetoothAudio.value) {
             AudioRouter.routeToBluetoothIfAvailable(this)
         }
-        logClickableNodes(root)
-        val target = findAnswerNode(root)
-        if (target != null) {
-            val ok = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            Log.i(TAG, "Tapped Answer node ok=$ok id=${target.viewIdResourceName}")
-            CrashLog.append(this, "accessibility tapped id=${target.viewIdResourceName} text='${target.text}' desc='${target.contentDescription}' clickOk=$ok")
-            if (!ok) swipeUpFallback(target)
+
+        val visibleWindowPkgs = mutableListOf<String>()
+        val whatsAppRoots = mutableListOf<AccessibilityNodeInfo>()
+
+        val windowList = runCatching { windows }.getOrNull()
+        if (!windowList.isNullOrEmpty()) {
+            for (window in windowList) {
+                val root = window.root ?: continue
+                val pkg = root.packageName?.toString().orEmpty()
+                visibleWindowPkgs += "${pkg}:type${window.type}"
+                if (pkg == PKG_WHATSAPP || pkg == PKG_WHATSAPP_BUSINESS) {
+                    whatsAppRoots += root
+                }
+            }
+        }
+        val activeRoot = rootInActiveWindow
+        if (activeRoot != null) {
+            val pkg = activeRoot.packageName?.toString().orEmpty()
+            if ((pkg == PKG_WHATSAPP || pkg == PKG_WHATSAPP_BUSINESS) &&
+                whatsAppRoots.none { it === activeRoot }
+            ) {
+                whatsAppRoots += activeRoot
+            }
+        }
+
+        CrashLog.append(this, "accessibility windows: visible=$visibleWindowPkgs whatsappRoots=${whatsAppRoots.size}")
+
+        if (whatsAppRoots.isEmpty()) {
+            CrashLog.append(this, "accessibility: no WhatsApp window visible across all windows — nothing to tap")
             return
         }
-        Log.i(TAG, "No Answer node found — likely already answered by PendingIntent path")
-        CrashLog.append(this, "accessibility: no Answer node visible (call probably answered already)")
+
+        for ((idx, root) in whatsAppRoots.withIndex()) {
+            logClickableNodes(root, label = "wa-window-$idx")
+            val target = findAnswerNode(root)
+            if (target != null) {
+                val ok = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                Log.i(TAG, "Tapped Answer node ok=$ok id=${target.viewIdResourceName}")
+                CrashLog.append(this,
+                    "accessibility tapped (window-$idx) id=${target.viewIdResourceName} text='${target.text}' desc='${target.contentDescription}' clickOk=$ok")
+                if (!ok) swipeUpFallback(target)
+                return
+            }
+        }
+        CrashLog.append(this, "accessibility: WhatsApp window present but no Answer node matched in any root")
     }
 
-    private fun logClickableNodes(root: AccessibilityNodeInfo) {
-        val sb = StringBuilder("accessibility tree clickables: ")
+    private fun logClickableNodes(root: AccessibilityNodeInfo, label: String = "") {
+        val sb = StringBuilder("accessibility tree clickables $label: ")
         val queue: ArrayDeque<AccessibilityNodeInfo> = ArrayDeque()
         queue.add(root)
         var count = 0

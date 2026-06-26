@@ -140,14 +140,16 @@ class CallNotificationListener : NotificationListenerService() {
                 CrashLog.append(this, "fireAnswerAction returned $ok")
             }
             val invoked = CallAccessibilityService.directInvoke()
-            CrashLog.append(this, "accessibility directInvoke=$invoked (1st)")
+            CrashLog.append(this, "accessibility directInvoke=$invoked (attempt-1)")
             SilenceWatchdog.startForActiveCall(this, isCellular = false)
         }, totalDelay)
 
-        handler.postDelayed({
-            val invoked = CallAccessibilityService.directInvoke()
-            CrashLog.append(this, "accessibility directInvoke=$invoked (2nd retry)")
-        }, totalDelay + 3000L)
+        listOf(1500L, 3000L, 6000L, 10000L).forEachIndexed { i, extra ->
+            handler.postDelayed({
+                val invoked = CallAccessibilityService.directInvoke()
+                CrashLog.append(this, "accessibility directInvoke=$invoked (attempt-${i + 2})")
+            }, totalDelay + extra)
+        }
     }
 
     private fun bringWhatsAppToForeground(n: Notification, pkg: String) {
