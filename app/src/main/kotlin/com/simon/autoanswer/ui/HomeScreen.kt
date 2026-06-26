@@ -99,6 +99,7 @@ fun HomeScreen() {
     val overlay = remember(permTick) { PermissionStatus.canDrawOverlays(context) }
     val stayAwake = remember(permTick) { PermissionStatus.isStayAwakeEnabled(context) }
     val devOptsUnlocked = remember(permTick) { PermissionStatus.isDeveloperOptionsUnlocked(context) }
+    val whatsappFsiConfirmed by prefs.whatsappFsiConfirmed.collectAsState()
     val answerCalls = remember(permTick) { PermissionStatus.hasAnswerCallsPermission(context) }
     val recordAudio = remember(permTick) { PermissionStatus.hasRecordAudioPermission(context) }
     val contactsPerm = remember(permTick) { PermissionStatus.hasContactsPermission(context) }
@@ -179,10 +180,27 @@ fun HomeScreen() {
                 rationale = if (devOptsUnlocked) {
                     "Lives in Developer Options. Fix will open it — toggle 'Stay awake'."
                 } else {
-                    "Developer Options must be unlocked first: Settings → About tablet → tap Build number 7 times. Then Fix will open Developer Options where you toggle 'Stay awake'."
+                    "Developer Options isn't unlocked, or this ROM (e.g. Hyundai P634 / Coopers) has stripped it. Workaround: set Screen timeout to its longest value via the Display button below. Diagnostic stays MISSING but the screen-stays-on behaviour is equivalent."
                 },
                 granted = stayAwake,
                 onFix = { PermissionStatus.openDeveloperOptions(context) },
+            )
+
+            OutlinedButton(
+                onClick = { PermissionStatus.openDisplaySettings(context) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Open Display settings (set Screen timeout → longest)")
+            }
+            PermissionRow(
+                title = "Allow WhatsApp full-screen calls",
+                rationale = "Android 14 blocks apps from showing their call screen unless explicitly allowed. Without this, WhatsApp shows only a heads-up banner and the call activity never reaches the foreground, so accessibility can't tap the green Answer button. Path: Settings → Apps → Special app access → Full-screen intent notifications → WhatsApp → Allow. The Fix button deep-links there.",
+                granted = whatsappFsiConfirmed,
+                onFix = {
+                    PermissionStatus.openWhatsAppFullScreenIntentSettings(context)
+                    prefs.setWhatsappFsiConfirmed(true)
+                },
+                onReset = { prefs.setWhatsappFsiConfirmed(false) },
             )
 
             OutlinedButton(

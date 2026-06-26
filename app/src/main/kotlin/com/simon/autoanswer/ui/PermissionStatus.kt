@@ -155,4 +155,26 @@ object PermissionStatus {
         }
         runCatching { context.startActivity(intent) }
     }
+
+    fun openDisplaySettings(context: Context) {
+        val intent = Intent(Settings.ACTION_DISPLAY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }.onFailure {
+            context.startActivity(
+                Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
+
+    fun openWhatsAppFullScreenIntentSettings(context: Context) {
+        val whatsAppUri = Uri.parse("package:com.whatsapp")
+        val attempts = listOf(
+            Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT", whatsAppUri),
+            Intent("android.settings.MANAGE_ALL_FULL_SCREEN_INTENT_PERMISSION"),
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, whatsAppUri),
+        )
+        for (intent in attempts) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (runCatching { context.startActivity(intent) }.isSuccess) return
+        }
+    }
 }

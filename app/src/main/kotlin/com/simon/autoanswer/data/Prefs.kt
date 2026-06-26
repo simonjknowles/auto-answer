@@ -70,6 +70,9 @@ class Prefs private constructor(private val sp: SharedPreferences) {
     private val _logEmailEnabled = MutableStateFlow(sp.getBoolean(KEY_LOG_EMAIL_ENABLED, false))
     val logEmailEnabled: StateFlow<Boolean> = _logEmailEnabled.asStateFlow()
 
+    private val _whatsappFsiConfirmed = MutableStateFlow(sp.getBoolean(KEY_WA_FSI_CONFIRMED, false))
+    val whatsappFsiConfirmed: StateFlow<Boolean> = _whatsappFsiConfirmed.asStateFlow()
+
     fun setEnabled(value: Boolean) {
         sp.edit { putBoolean(KEY_ENABLED, value) }
         _enabled.value = value
@@ -168,6 +171,11 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         _logEmailEnabled.value = value
     }
 
+    fun setWhatsappFsiConfirmed(value: Boolean) {
+        sp.edit { putBoolean(KEY_WA_FSI_CONFIRMED, value) }
+        _whatsappFsiConfirmed.value = value
+    }
+
     companion object {
         const val DEFAULT_DELAY_MS = 1500
 
@@ -191,6 +199,7 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         private const val KEY_DEBUG_PORT = "debug_port"
         private const val KEY_LOG_EMAIL_URL = "log_email_url"
         private const val KEY_LOG_EMAIL_ENABLED = "log_email_enabled"
+        private const val KEY_WA_FSI_CONFIRMED = "whatsapp_fsi_confirmed"
 
         @Volatile private var instance: Prefs? = null
 

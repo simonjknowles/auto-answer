@@ -40,6 +40,7 @@ fun PermissionRow(
     rationale: String,
     granted: Boolean,
     onFix: () -> Unit,
+    onReset: (() -> Unit)? = null,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -57,8 +58,11 @@ fun PermissionRow(
                 Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(rationale, style = MaterialTheme.typography.bodySmall)
             }
-            if (!granted) {
-                Button(onClick = onFix) { Text("Fix") }
+            when {
+                !granted -> Button(onClick = onFix) { Text("Fix") }
+                onReset != null -> androidx.compose.material3.TextButton(onClick = onReset) {
+                    Text("Reset")
+                }
             }
         }
     }
