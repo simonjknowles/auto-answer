@@ -1,8 +1,11 @@
 package com.simon.autoanswer.service
 
+import android.app.ActivityOptions
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.service.notification.NotificationListenerService
@@ -123,17 +126,7 @@ class CallNotificationListener : NotificationListenerService() {
             1500L
         } else 0L
 
-        val fullScreen = n.fullScreenIntent
-        if (fullScreen != null) {
-            try {
-                fullScreen.send()
-                CrashLog.append(this, "fired fullScreenIntent (brings WA call activity to foreground)")
-            } catch (e: PendingIntent.CanceledException) {
-                CrashLog.append(this, "fullScreenIntent send failed: ${e.message}")
-            }
-        } else {
-            CrashLog.append(this, "no fullScreenIntent on notification")
-        }
+        bringWhatsAppToForeground(n, sbn.packageName)
 
         val totalDelay = baseDelay + announceDelay
         val fireAtMs = System.currentTimeMillis() + totalDelay
@@ -147,9 +140,73 @@ class CallNotificationListener : NotificationListenerService() {
                 CrashLog.append(this, "fireAnswerAction returned $ok")
             }
             val invoked = CallAccessibilityService.directInvoke()
-            CrashLog.append(this, "accessibility directInvoke=$invoked")
+            CrashLog.append(this, "accessibility directInvoke=$invoked (1st)")
             SilenceWatchdog.startForActiveCall(this, isCellular = false)
         }, totalDelay)
+
+        handler.postDelayed({
+            val invoked = CallAccessibilityService.directInvoke()
+            CrashLog.append(this, "accessibility directInvoke=$invoked (2nd retry)")
+        }, totalDelay + 3000L)
+    }
+
+    private fun bringWhatsAppToForeground(n: Notification, pkg: String) {
+        val balOptions = makeBalOptions()
+
+        val fsi = n.fullScreenIntent
+        if (fsi != null) {
+            try {
+                if (balOptions != null) {
+                    fsi.send(this, 0, null, null, null, null, balOptions)
+                } else {
+                    fsi.send()
+                }
+                CrashLog.append(this, "fired fullScreenIntent (BAL=${balOptions != null})")
+            } catch (e: PendingIntent.CanceledException) {
+                CrashLog.append(this, "fullScreenIntent send failed: ${e.message}")
+            }
+        } else {
+            CrashLog.append(this, "no fullScreenIntent on notification")
+        }
+
+        val contentIntent = n.contentIntent
+        if (contentIntent != null) {
+            try {
+                if (balOptions != null) {
+                    contentIntent.send(this, 0, null, null, null, null, balOptions)
+                } else {
+                    contentIntent.send()
+                }
+                CrashLog.append(this, "fired contentIntent as additional path")
+            } catch (e: PendingIntent.CanceledException) {
+                CrashLog.append(this, "contentIntent send failed: ${e.message}")
+            }
+        }
+
+        try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                startActivity(launchIntent)
+                CrashLog.append(this, "startActivity launchIntent($pkg) — uses SYSTEM_ALERT_WINDOW BAL grant")
+            }
+        } catch (e: Exception) {
+            CrashLog.append(this, "startActivity launchIntent failed: ${e.message}")
+        }
+    }
+
+    private fun makeBalOptions(): Bundle? {
+        if (Build.VERSION.SDK_INT < 34) return null
+        return try {
+            val opts = ActivityOptions.makeBasic()
+            opts.setPendingIntentBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+            )
+            opts.toBundle()
+        } catch (e: Throwable) {
+            CrashLog.append(this, "BAL options unavailable: ${e.message}")
+            null
+        }
     }
 
     private fun isIncomingCall(n: Notification): Boolean {
