@@ -162,6 +162,8 @@ class CallAccessibilityService : AccessibilityService() {
 
         @Volatile private var instance: CallAccessibilityService? = null
 
+        fun isInstanceAlive(): Boolean = instance != null
+
         fun directInvoke(): Boolean {
             val i = instance ?: return false
             i.handler.post { i.tryAnswerImmediately() }

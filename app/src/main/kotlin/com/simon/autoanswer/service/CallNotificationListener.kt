@@ -23,17 +23,34 @@ class CallNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        instance = this
+        CrashLog.append(this, "notification listener connected")
+        Log.i(TAG, "Listener connected")
         cellular = CellularAnswerer(this).also { it.start() }
     }
 
     override fun onListenerDisconnected() {
+        instance = null
+        CrashLog.append(this, "notification listener disconnected")
+        Log.i(TAG, "Listener disconnected")
         cellular?.stop()
         cellular = null
         super.onListenerDisconnected()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (sbn.packageName == PKG_WHATSAPP || sbn.packageName == PKG_WHATSAPP_BUSINESS) {
+        val pkg = sbn.packageName
+        if (pkg.contains("whatsapp", ignoreCase = true)) {
+            val n = sbn.notification
+            val cat = n?.category
+            val title = n?.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
+            val text = n?.extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty().take(60)
+            val actionCount = n?.actions?.size ?: 0
+            CrashLog.append(this,
+                "notif pkg=$pkg cat=$cat actions=$actionCount " +
+                    "title='${title.take(40)}' text='$text'")
+        }
+        if (pkg == PKG_WHATSAPP || pkg == PKG_WHATSAPP_BUSINESS) {
             RemoteCommandParser.handle(this, sbn)
             handleWhatsAppCall(sbn)
         }
@@ -51,11 +68,20 @@ class CallNotificationListener : NotificationListenerService() {
 
     private fun handleWhatsAppCall(sbn: StatusBarNotification) {
         val prefs = Prefs.get(this)
-        if (!prefs.enabled.value) return
-        if (prefs.dndUntilMs.value > System.currentTimeMillis()) return
+        if (!prefs.enabled.value) {
+            CrashLog.append(this, "whatsapp notif ignored: enabled=false")
+            return
+        }
+        if (prefs.dndUntilMs.value > System.currentTimeMillis()) {
+            CrashLog.append(this, "whatsapp notif ignored: dnd active")
+            return
+        }
 
         val n = sbn.notification ?: return
-        if (!isIncomingCall(n)) return
+        if (!isIncomingCall(n)) {
+            CrashLog.append(this, "whatsapp notif not classified as incoming call (cat=${n.category} text='${n.extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.take(60)}')")
+            return
+        }
 
         val key = sbn.key
         val now = System.currentTimeMillis()
@@ -149,6 +175,9 @@ class CallNotificationListener : NotificationListenerService() {
         private const val PKG_WHATSAPP = "com.whatsapp"
         private const val PKG_WHATSAPP_BUSINESS = "com.whatsapp.w4b"
         private const val DEDUPE_WINDOW_MS = 5_000L
+
+        @Volatile private var instance: CallNotificationListener? = null
+        fun isAlive(): Boolean = instance != null
 
         private val ANSWER_KEYWORDS = listOf(
             "answer", "accept", "antworten", "responder", "repondre", "rispondi"

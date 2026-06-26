@@ -102,6 +102,13 @@ class WatchdogService : Service() {
             "$baseText · debug :${prefs.debugServerPort.value}"
         } else baseText
         nm.notify(NOTIF_ID, buildNotification(text))
+
+        val nlAlive = CallNotificationListener.isAlive()
+        val a11yAlive = CallAccessibilityService.isInstanceAlive()
+        com.simon.autoanswer.diag.CrashLog.append(
+            this,
+            "watchdog tick · notifListener=$nlAlive · accessibility=$a11yAlive",
+        )
     }
 
     private fun buildNotification(text: String): Notification {
