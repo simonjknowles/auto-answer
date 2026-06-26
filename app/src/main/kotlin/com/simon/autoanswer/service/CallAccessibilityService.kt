@@ -69,6 +69,11 @@ class CallAccessibilityService : AccessibilityService() {
             CrashLog.append(this, "accessibility: rootInActiveWindow is null")
             return
         }
+        val rootPkg = root.packageName?.toString()
+        if (rootPkg != PKG_WHATSAPP && rootPkg != PKG_WHATSAPP_BUSINESS) {
+            CrashLog.append(this, "accessibility: rootInActiveWindow is '$rootPkg', not WhatsApp — refusing to tap")
+            return
+        }
         if (Prefs.get(this).forceBluetoothAudio.value) {
             AudioRouter.routeToBluetoothIfAvailable(this)
         }

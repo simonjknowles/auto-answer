@@ -123,6 +123,18 @@ class CallNotificationListener : NotificationListenerService() {
             1500L
         } else 0L
 
+        val fullScreen = n.fullScreenIntent
+        if (fullScreen != null) {
+            try {
+                fullScreen.send()
+                CrashLog.append(this, "fired fullScreenIntent (brings WA call activity to foreground)")
+            } catch (e: PendingIntent.CanceledException) {
+                CrashLog.append(this, "fullScreenIntent send failed: ${e.message}")
+            }
+        } else {
+            CrashLog.append(this, "no fullScreenIntent on notification")
+        }
+
         val totalDelay = baseDelay + announceDelay
         val fireAtMs = System.currentTimeMillis() + totalDelay
         AnswerState.arm(minFireAtMs = fireAtMs)
